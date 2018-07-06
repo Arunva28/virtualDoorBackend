@@ -152,6 +152,7 @@ class SecurityOfficeView(APIView):
                     else:
                         user = request.data['user']
                         if email == user:
+                            serializer.save()
                             return Response(serializer.data, status=status.HTTP_201_CREATED)
                         else:
                             return Response("Non-admin user cannot add other visitor", status=status.HTTP_401_UNAUTHORIZED)
