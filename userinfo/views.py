@@ -43,11 +43,10 @@ class UserRecordView(APIView):
            # del (list(serializer.data)[0]["password"])
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
-            print("Not an admin")
-             #print(UserInfo.objects.filter(user_id=user.user_id))
-            content = UserInfo.objects.filter(user_id=user.user_id)
-            serializer = AddUserSerializer(content, many=True)
-            return Response(serializer.data, status=status.HTTP_200_OK)
+             print("Not an admin")
+             content = UserInfo.objects.filter(user_id=user.user_id)
+             serializer = AddUserSerializer(content, many=True)
+             return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request):
         serializer = AddUserSerializer(data=request.data)
@@ -172,33 +171,42 @@ class OTPGeneration(APIView):
     serializer_class = ForgotPasswordSerializer
 
     def post(self, request):
-        email = request.data['email']
-        user = BasicUserInfo.objects.get(email=email)
+        print("till post")
 
-        if user is not None:
-            totp = self.totp_obj()
-            token = str(totp.token()).zfill(6)
-            req_data = dict({'user_email': email,
+        email = request.data['email']
+        try:
+            user = BasicUserInfo.objects.get(email=email)
+
+            if user is not None:
+                print("till user")
+                totp = self.totp_obj()
+                token = str(totp.token()).zfill(6)
+                req_data = dict({'user_email': email,
                              'otp': token,
                              'date_time': datetime.now(timezone.utc)
                              })
-            user = ForgotPassword.objects.get(user_email=email)
-            user.delete()
-            forgot_password_serializer = ForgotPasswordSerializer(data=req_data)
-            if forgot_password_serializer.is_valid(raise_exception=ValueError):
-                forgot_password_serializer.save()
-                subject = 'Forgot Your Password?'
-                message = 'Dear Customer,' + "\n" + \
-                          'We wanted to inform you that we have received your password change request.' \
-                          'This email contains OTP for password change' + "\n" + "\n" + \
-                          'OTP : ' + token + "\n"' Please note that this is valid only for 5 minutes'
-                email_from = settings.EMAIL_HOST_USER
-                recipient_list = [email]
-                send_mail(subject, message, email_from, recipient_list)
-                return Response("Mail sent successfully. Please check your inbox", status=status.HTTP_200_OK)
-            else:
-                return Response("Invalid Format", status=status.HTTP_400_BAD_REQUEST)
-        else:
+                try:
+                    user = ForgotPassword.objects.get(user_email=email)
+                    user.delete()
+                except:
+                    print("user not available")
+                forgot_password_serializer = ForgotPasswordSerializer(data=req_data)
+                if forgot_password_serializer.is_valid(raise_exception=ValueError):
+                    forgot_password_serializer.save()
+                    subject = 'Forgot Your Password?'
+                    message = 'Dear Customer,' + "\n" + \
+                                'We wanted to inform you that we have received your password change request.' \
+                                'This email contains OTP for password change' + "\n" + "\n" + \
+                                'OTP : ' + token + "\n"' Please note that this is valid only for 5 minutes'
+                    email_from = settings.EMAIL_HOST_USER
+                    recipient_list = [email]
+                    send_mail(subject, message, email_from, recipient_list)
+                    return Response("Mail sent successfully. Please check your inbox", status=status.HTTP_200_OK)
+                else:
+                    return Response("Invalid Format", status=status.HTTP_400_BAD_REQUEST)
+
+        except:
+            print("till nowhere")
             return Response("User Not found in database", status=status.HTTP_400_BAD_REQUEST)
 
     def totp_obj(self):
