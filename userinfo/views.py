@@ -246,5 +246,5 @@ class UpdatePassword(APIView):
                                         status=status.HTTP_200_OK)
                 else:
                     return Response("Incorrect Password", status=status.HTTP_401_UNAUTHORIZED)
-            else:
-                return Response("Invalid User", status=status.HTTP_401_UNAUTHORIZED)
+        else:
+            return Response("Invalid User", status=status.HTTP_401_UNAUTHORIZED)
