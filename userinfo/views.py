@@ -113,6 +113,7 @@ class UserOperations(APIView):
     print("tillhere")
     authentication_classes = [BasicAuthentication, CsrfExemptSessionAuthentication]
     serializer_class = BasicUserSerializer
+
     def delete(self, request, email):
         admin_email = request.user.email
         user = UserInfo.objects.get(user=admin_email)
@@ -136,6 +137,7 @@ class OTPVerification(APIView):
     def post(self, request):
         email = request.data['email']
         user = ForgotPassword.objects.get(user_email=email)
+        user2 = BasicUserInfo.objects.get(email=email)
         if user is not None:
             try:
                 token = request.data['token']
@@ -150,8 +152,8 @@ class OTPVerification(APIView):
                         if request.data['new_password'] != request.data['confirm_password']:
                             return Response("Passwords do not match", status=status.HTTP_400_BAD_REQUEST)
                         else:
-                            user.password = make_password(request.data['new_password'])
-                            user.save()
+                            user2.password = make_password(request.data['new_password'])
+                            user2.save()
                             logout(request)
                             return Response("Password changed successfully. Please login again with new password",
                                             status=status.HTTP_200_OK)
@@ -217,6 +219,7 @@ class OTPGeneration(APIView):
         return totp
 
 
+
 @method_decorator(csrf_exempt, name='post')
 class UpdatePassword(APIView):
     authentication_classes = [BasicAuthentication, CsrfExemptSessionAuthentication]
@@ -246,5 +249,30 @@ class UpdatePassword(APIView):
                                         status=status.HTTP_200_OK)
                 else:
                     return Response("Incorrect Password", status=status.HTTP_401_UNAUTHORIZED)
+        else:
+            return Response("Invalid User", status=status.HTTP_401_UNAUTHORIZED)
+
+
+@method_decorator(csrf_exempt, name='post')
+class UpdateMobileNumber(APIView):
+    authentication_classes = [BasicAuthentication, CsrfExemptSessionAuthentication]
+    serializer_class = AddUserSerializer
+
+    def post(self, request):
+        email = request.user.email
+        user_details = UserInfo.objects.get(user=email)
+        if user_details is not None:
+
+            old_number = request.data['Old_Number']
+            phone_no = user_details.phoneNo
+            if old_number == phone_no:
+                if request.data['Old_Number'] == request.data['NewNumber']:
+                    return Response("New number cannot be same as old number", status=status.HTTP_406_NOT_ACCEPTABLE)
+                else:
+                    user_details.phoneNo = (request.data['NewNumber'])
+                    user_details.save()
+                    return Response("Phone Number updated",status=status.HTTP_200_OK)
+            else:
+                return Response("Incorrect PhoneNo", status=status.HTTP_401_UNAUTHORIZED)
         else:
             return Response("Invalid User", status=status.HTTP_401_UNAUTHORIZED)
