@@ -38,7 +38,8 @@ class UserRecordView(APIView):
         is_admin = user.isAdmin
         if is_admin is True:
             print("admin")
-            users = UserInfo.objects.all()
+            print(user.buildingName)
+            users = UserInfo.objects.filter(buildingName=user.buildingName)
             serializer = AddUserSerializer(users, many=True)
            # del (list(serializer.data)[0]["password"])
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -58,16 +59,19 @@ class UserRecordView(APIView):
         if is_admin is True:
             serializer = AddUserSerializer(data=request.data)
             if serializer.is_valid(raise_exception=ValueError):
-                request.data['user']['username'] = request.data['user']['username'].lower()
-                request.data['user']['username'] = request.data['user']['username'].strip()
-                user = serializer.create(validated_data=request.data)
-                subject = 'Welcome to VirtualDoor'
-                message = 'Dear Customer,' + "\n" + 'Thank you for registering with us.' + "\n" + "\n" +\
-                          'THIS IS AN AUTO GENERATED MAIL. PLEASE DO NOT REPLY TO THIS MAIL'
-                email_from = settings.EMAIL_HOST_USER
-                recipient_list = [request.data['user_id']]
-                send_mail(subject, message, email_from, recipient_list)
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
+                if user.buildingName == request.data['buildingName']:
+                    request.data['user']['username'] = request.data['user']['username'].lower()
+                    request.data['user']['username'] = request.data['user']['username'].strip()
+                    user = serializer.create(validated_data=request.data)
+                    subject = 'Welcome to VirtualDoor'
+                    message = 'Dear Customer,' + "\n" + 'Thank you for registering with us.' + "\n" + "\n" +\
+                              'THIS IS AN AUTO GENERATED MAIL. PLEASE DO NOT REPLY TO THIS MAIL'
+                    email_from = settings.EMAIL_HOST_USER
+                    recipient_list = [request.data['user_id']]
+                    send_mail(subject, message, email_from, recipient_list)
+                    return Response(serializer.data, status=status.HTTP_201_CREATED)
+                else:
+                    return Response("Building Names do not match", status=status.HTTP_401_UNAUTHORIZED)
             return Response(serializer.error_messages, status=status.HTTP_400_BAD_REQUEST)
         else:
             return Response("Not authorized", status=status.HTTP_401_UNAUTHORIZED)
