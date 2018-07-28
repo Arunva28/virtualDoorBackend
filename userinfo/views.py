@@ -275,8 +275,30 @@ class UpdateMobileNumber(APIView):
                 else:
                     user_details.phoneNo = (request.data['NewNumber'])
                     user_details.save()
-                    return Response("Phone Number updated",status=status.HTTP_200_OK)
+                    return Response("Phone Number updated", status=status.HTTP_200_OK)
             else:
                 return Response("Incorrect PhoneNo", status=status.HTTP_401_UNAUTHORIZED)
         else:
             return Response("Invalid User", status=status.HTTP_401_UNAUTHORIZED)
+
+
+@method_decorator(csrf_exempt, name='post')
+class UpdateAdminRights(APIView):
+    authentication_classes = [BasicAuthentication, CsrfExemptSessionAuthentication]
+    serializer_class = AddUserSerializer
+
+    def post(self, request):
+        email = request.user.email
+        admin_status = UserInfo.objects.get(user=email)
+        if admin_status.isAdmin is True:
+            current_user = request.data['user']
+            try:
+                user_info = UserInfo.objects.get(user=current_user)
+
+                user_info.isAdmin = request.data['isAdmin']
+                user_info.save()
+                return Response('Updated user admin rights', status=status.HTTP_200_OK)
+            except:
+                return Response('User not found', status=status.HTTP_404_NOT_FOUND)
+        else:
+            return Response('Non permissible',status=status.HTTP_401_UNAUTHORIZED)

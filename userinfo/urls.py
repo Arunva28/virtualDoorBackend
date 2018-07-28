@@ -14,8 +14,8 @@ urlpatterns = [
     url(r'^updatepassword/$', views.UpdatePassword.as_view()),
     url(r'^forgot_password/$', views.OTPVerification.as_view()),
     url(r'^new_password_change/$', views.OTPGeneration.as_view()),
-
-
+    url(r'^updateadminrights/$', views.UpdateAdminRights.as_view()),
+    url(r'^updatephonenumber/$', views.UpdateMobileNumber.as_view()),
     # url(r'^$', views.WelcomePage.as_view()),
     # url(r'^query/(?P<accountsInfo>[\w.@+-]+)$', views.UserQuery.as_view()),
     # url(r'^updateAccounts/$', views.UserUpdateInfo.as_view()),
