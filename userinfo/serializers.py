@@ -18,7 +18,7 @@ class AddUserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = UserInfo
-        fields = ('user', 'phoneNo', 'unitNo', 'buildingName', 'isAdmin')
+        fields = ('user', 'phoneNo', 'unitNo', 'buildingName', 'houseNo', 'isAdmin')
 
     def create(self, validated_data):
         user_data = validated_data.pop('user')

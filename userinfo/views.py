@@ -19,6 +19,7 @@ import time
 from datetime import datetime, timezone
 from datetime import timedelta
 from django.contrib.auth.hashers import make_password, check_password
+from django.db.models import Q
 
 
 class CsrfExemptSessionAuthentication(SessionAuthentication):
@@ -41,7 +42,6 @@ class UserRecordView(APIView):
             print(user.buildingName)
             users = UserInfo.objects.filter(buildingName=user.buildingName)
             serializer = AddUserSerializer(users, many=True)
-           # del (list(serializer.data)[0]["password"])
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
              print("Not an admin")
@@ -60,16 +60,28 @@ class UserRecordView(APIView):
             serializer = AddUserSerializer(data=request.data)
             if serializer.is_valid(raise_exception=ValueError):
                 if user.buildingName == request.data['buildingName']:
-                    request.data['user']['username'] = request.data['user']['username'].lower()
-                    request.data['user']['username'] = request.data['user']['username'].strip()
-                    user = serializer.create(validated_data=request.data)
-                    subject = 'Welcome to VirtualDoor'
-                    message = 'Dear Customer,' + "\n" + 'Thank you for registering with us.' + "\n" + "\n" +\
-                              'THIS IS AN AUTO GENERATED MAIL. PLEASE DO NOT REPLY TO THIS MAIL'
-                    email_from = settings.EMAIL_HOST_USER
-                    recipient_list = [request.data['user_id']]
-                    send_mail(subject, message, email_from, recipient_list)
-                    return Response(serializer.data, status=status.HTTP_201_CREATED)
+                    unit_found = UserInfo.objects.filter(Q(buildingName=request.data['buildingName']))
+                    for element in unit_found:
+                        if request.data['unitNo'] == element.unitNo:
+                            tenant_found = UserInfo.objects.filter((Q(buildingName=request.data['buildingName'])
+                                                                   & Q(unitNo=request.data['unitNo'])))
+
+                            for count in tenant_found:
+                                if request.data['houseNo'] == count.houseNo:
+                                    return Response("Tenant already exists. Please verify", status=status.HTTP_400_BAD_REQUEST)
+                            # request.data['user']['username'] = request.data['user']['username'].lower()
+                            # request.data['user']['username'] = request.data['user']['username'].strip()
+                            # user = serializer.create(validated_data=request.data)
+                            # subject = 'Welcome to VirtualDoor'
+                            # message = 'Dear Customer,' + "\n" + 'Thank you for registering with us.' + "\n" + "\n" +\
+                            #           'THIS IS AN AUTO GENERATED MAIL. PLEASE DO NOT REPLY TO THIS MAIL'
+                            # email_from = settings.EMAIL_HOST_USER
+                            # recipient_list = [request.data['user_id']]
+                            # send_mail(subject, message, email_from, recipient_list)
+                            # return Response(serializer.data, status=status.HTTP_201_CREATED)
+                            return Response("test code", status=status.HTTP_200_OK)
+                    return Response("unitNo does not exist", status=status.HTTP_400_BAD_REQUEST)
+
                 else:
                     return Response("Building Names do not match", status=status.HTTP_401_UNAUTHORIZED)
             return Response(serializer.error_messages, status=status.HTTP_400_BAD_REQUEST)
@@ -221,7 +233,6 @@ class OTPGeneration(APIView):
                     digits=6)
         totp.time = time.time()
         return totp
-
 
 
 @method_decorator(csrf_exempt, name='post')

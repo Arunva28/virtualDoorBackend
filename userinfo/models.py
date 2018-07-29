@@ -4,7 +4,6 @@ from phone_field import PhoneField
 import datetime
 
 
-
 # Create your models here.
 class BasicUserInfo(AbstractUser):
     email = models.EmailField(primary_key=True, unique=True, db_index=True)
@@ -16,6 +15,7 @@ class UserInfo(models.Model):
     unitNo = models.CharField(max_length=255, default="")
     buildingName = models.CharField(max_length=255, default="")
     isAdmin = models.BooleanField(default=False)
+    houseNo = models.CharField(max_length=255, default="")
 
 
 class ForgotPassword(models.Model):
