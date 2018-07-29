@@ -32,8 +32,9 @@ class SecurityOfficeView(APIView):
             today = datetime.today()
             now = datetime.now()
             if var > 1:
-                securityofficeinfo = SecurityOffice.objects.filter((Q(Date=today) & Q(Time__gte=now.time())) |
-                                                                   Q(Date__gt=today)).order_by('Date', 'Time')
+                securityofficeinfo = SecurityOffice.objects.filter(((Q(Date=today) & Q(Time__gte=now.time())) |
+                                                                   Q(Date__gt=today)) &
+                                                                   Q(BuildingName=user.buildingName)).order_by('Date', 'Time')
                 serializer = SeurityOfficeSerializer(securityofficeinfo, many=True)
                 return Response(serializer.data, status=status.HTTP_200_OK)
             else:
@@ -147,15 +148,21 @@ class SecurityOfficeView(APIView):
                     user = UserInfo.objects.get(user=email)
                     is_admin = user.isAdmin
                     if is_admin is True:
-                        serializer.save()
-                        return Response(serializer.data, status=status.HTTP_201_CREATED)
-                    else:
-                        user = request.data['user']
-                        if email == user:
+                        if request.data['BuildingName'] == user.buildingName:
                             serializer.save()
                             return Response(serializer.data, status=status.HTTP_201_CREATED)
                         else:
-                            return Response("Non-admin user cannot add other visitor", status=status.HTTP_401_UNAUTHORIZED)
+                            return Response("Not right building", status=status.HTTP_400_BAD_REQUEST)
+                    else:
+                        if request.data['BuildingName'] == user.buildingName:
+                            user = request.data['user']
+                            if email == user:
+                                serializer.save()
+                                return Response(serializer.data, status=status.HTTP_201_CREATED)
+                            else:
+                                return Response("Non-admin user cannot add other visitor", status=status.HTTP_401_UNAUTHORIZED)
+                        else:
+                            return Response("Not right building", status=status.HTTP_400_BAD_REQUEST)
 
                 #else:
                  #   return Response("Datetime should be greater than current time", status=status.HTTP_400_BAD_REQUEST)
