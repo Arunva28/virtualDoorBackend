@@ -149,18 +149,27 @@ class SecurityOfficeView(APIView):
                     is_admin = user.isAdmin
                     if is_admin is True:
                         if request.data['BuildingName'] == user.buildingName:
-                            serializer.save()
-                            return Response(serializer.data, status=status.HTTP_201_CREATED)
+                            print(request.data['Unit'])
+                            print(user.unitNo)
+                            if request.data['Unit'] == user.unitNo:
+                                serializer.save()
+                                return Response(serializer.data, status=status.HTTP_201_CREATED)
+                            else:
+                                return Response("Unit Incorrect", status=status.HTTP_400_BAD_REQUEST)
+
                         else:
                             return Response("Not right building", status=status.HTTP_400_BAD_REQUEST)
                     else:
                         if request.data['BuildingName'] == user.buildingName:
-                            user = request.data['user']
-                            if email == user:
-                                serializer.save()
-                                return Response(serializer.data, status=status.HTTP_201_CREATED)
+                            if request.data['Unit'] == user.unitNo:
+                                user = request.data['user']
+                                if email == user:
+                                    serializer.save()
+                                    return Response(serializer.data, status=status.HTTP_201_CREATED)
+                                else:
+                                    return Response("Non-admin user cannot add other visitor", status=status.HTTP_401_UNAUTHORIZED)
                             else:
-                                return Response("Non-admin user cannot add other visitor", status=status.HTTP_401_UNAUTHORIZED)
+                                return Response("Unit Incorrect", status=status.HTTP_400_BAD_REQUEST)
                         else:
                             return Response("Not right building", status=status.HTTP_400_BAD_REQUEST)
 

@@ -28,30 +28,15 @@ class AccountsView(APIView):
         user = UserInfo.objects.get(user=request.user)
         is_admin = user.isAdmin
         if is_admin is True:
-            accounts_info = AccountsModel.objects.filter(expenseApproved=False)
+            accounts_info = AccountsModel.objects.all()
             print(request.user)
             serializer = AccountsSerializer(accounts_info, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
 
             email = request.user.email
-            accounts_info = AccountsModel.objects.filter(Q(user=email) & Q(expenseApproved=False))
-            serializer = AccountsSerializer(accounts_info, many=True)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-
-    def view(self, request):
-
-        user = UserInfo.objects.get(user=request.user)
-        is_admin = user.isAdmin
-        if is_admin is True:
-            accounts_info = AccountsModel.objects.filter(expenseApproved=False)
-            print(request.user)
-            serializer = AccountsSerializer(accounts_info, many=True)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        else:
-
-            email = request.user.email
-            accounts_info = AccountsModel.objects.filter(Q(user=email) & Q(expenseApproved=False))
+            print(email)
+            accounts_info = AccountsModel.objects.filter(user=email)
             serializer = AccountsSerializer(accounts_info, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -62,23 +47,58 @@ class AccountsView(APIView):
         serializer_user = ""
         user = UserInfo.objects.get(user=request.user)
         is_admin = user.isAdmin
-        buildning_name = request.data['buildingName']
-        houseNo = request.data['houseNo']
-        unitNo = request.data['unitNo']
         filter_data = ""
         serializer_user = AddUserSerializer(filter_data, many=True)
         if is_admin is True:
             try:
                 filter_data = UserInfo.objects.filter(Q(user_id=request.data['user']) &
-                                                      Q(buildingName=buildning_name) &
-                                                      Q(houseNo=houseNo) & Q(unitNo=unitNo))
+                                                  Q(buildingName=request.data['buildingName']))
                 serializer_user = AddUserSerializer(filter_data, many=True)
             finally:
-                if serializer_user.data and buildning_name == user.buildingName and unitNo == user.unitNo :
+                if serializer_user.data:
                     try:
                         accounts = Description.objects.get(Fields=request.data['Type'])
                     finally:
                         if accounts:
+                            if False:
+                                try:
+                                    date = request.data['Date']
+                                except:
+                                    date = datetime.now()
+                                    date = date.date()
+                                    date = str(date)
+                                    request.data['Date'] = date
+                                Comparison_Date = date.split('-')
+                                Integer_ComaprisonDate = []
+                                Date_Now = []
+
+                                Date_from_API = datetime.now()
+                                Date_from_API = Date_from_API.date()
+                                Date_from_API = str(Date_from_API)
+                                Date_from_API = Date_from_API.split('-')
+                                for i in range(0, len(Comparison_Date)):
+                                    b = int(Comparison_Date[i])
+                                    c = int(Date_from_API[i])
+                                    Date_Now.append(c)
+                                    Integer_ComaprisonDate.append(b)
+                                for i in range(0, 1):
+                                    if Integer_ComaprisonDate[0] > Date_Now[0]:
+                                        break
+                                    else:
+                                        if Integer_ComaprisonDate[0] == Date_Now[0]:
+                                            if Integer_ComaprisonDate[1] > Date_Now[1]:
+                                                break
+                                            else:
+                                                if Integer_ComaprisonDate[1] == Date_Now[1]:
+                                                    if Integer_ComaprisonDate[2] >= Date_Now[2]:
+                                                        break
+                                                    else:
+                                                        return Response("invalid date",
+                                                                        status=status.HTTP_401_UNAUTHORIZED)
+                                                else:
+                                                    return Response("invalid date", status=status.HTTP_401_UNAUTHORIZED)
+                                        else:
+                                            return Response("invalid date", status=status.HTTP_401_UNAUTHORIZED)
                             serializer = AccountsSerializer(data=request.data)
                             if serializer.is_valid(raise_exception=ValueError):
                                 serializer.save()
@@ -87,90 +107,21 @@ class AccountsView(APIView):
                             return Response("Drop down selection invalid", status=status.HTTP_401_UNAUTHORIZED)
 
                 else:
-                    return Response("user not found in the Building, House, or Unit Records", status=status.HTTP_401_UNAUTHORIZED)
+                    return Response("User doesnt exist in the building specified", status=status.HTTP_401_UNAUTHORIZED)
 
         else:
             try:
-                filter_data = UserInfo.objects.filter(Q(user_id=request.data['user']) &
-                                                  Q(buildingName=buildning_name) &
-                                                      Q(houseNo=houseNo) & Q(unitNo=unitNo))
-                serializer_user = AddUserSerializer(filter_data, many=True)
+                accounts = Description.objects.get(Fields=request.data['Type'])
             finally:
-                if serializer_user.data and request.data['user'] == user.user_id:
-                    try:
-                        accounts = Description.objects.get(Fields=request.data['Type'])
-                    finally:
-                        if accounts:
-                            serializer = AccountsSerializer(data=request.data)
-                            if request.data['Type'] == "Maintenance":
-                                if serializer.is_valid(raise_exception=ValueError):
-                                    serializer.save()
-                                    return Response(serializer.data, status=status.HTTP_201_CREATED)
-                            else:
-                                return Response("No privilege to add other payments expect MAINTENANCE",
-                                                status=status.HTTP_401_UNAUTHORIZED)
-                        else:
-                            return Response("Drop down selection invalid", status=status.HTTP_401_UNAUTHORIZED)
+                if accounts:
+                    serializer = AccountsSerializer(data=request.data)
+                    if serializer.is_valid(raise_exception=ValueError):
+                        serializer.save()
+                        return Response(serializer.data, status=status.HTTP_201_CREATED)
+                else:
+                    return Response("Drop down selection invalid", status=status.HTTP_401_UNAUTHORIZED)
 
-                return Response("Unauthorized, user not found in the Building, House, or Unit Records ",
-                                status=status.HTTP_401_UNAUTHORIZED)
-
-    def put(self,request):
-        user = ""
-        try:
-            user = UserInfo.objects.get(user=request.user)
-        finally:
-            is_admin = user.isAdmin
-            valid_user =""
-            response = ""
-            field_to_update = request.data['id']
-            field = AccountsModel.objects.get(id=field_to_update)
-            if is_admin is False and request.data['expenseApproved'] is True:
-                return Response("Only admin can approve the amount", status=status.HTTP_401_UNAUTHORIZED)
-
-        try:
-            valid_user = UserInfo.objects.get(user_id=request.data['user'])
-        except:
-            valid_user = ""
-        finally:
-            if valid_user:
-                if valid_user.buildingName == request.data['buildingName'] and valid_user.unitNo == request.data[
-                    'unitNo'] and valid_user.houseNo == request.data['houseNo'] and field.user == request.data['user']:
-
-                    if field.expenseApproved != request.data['expenseApproved'] and is_admin is True:
-                        field.expenseApproved = request.data['expenseApproved']
-                        response = response + "Expense Approved, "
-
-                    if str(field.Amount) == str(request.data['Amount']):
-                        print()
-                    else:
-                        field.Amount = request.data['Amount']
-                        response = response + "Amount Updated, "
-
-                    if field.IsExpense == request.data['IsExpense']:
-                        print()
-                    else:
-                        field.IsExpense = request.data['IsExpense']
-                        response = response + "Updated Income/Expense, "
-
-                    if str(field.Date) != str(request.data['Date']):
-                        field.Date = request.data['Date']
-                        response = response + "Date updated "
-
-                    if str(field.Type) != str(request.data['Type']) and is_admin is True:
-                        field.Type = request.data['Type']
-
-                    elif str(field.Type) != str(request.data['Type']) and is_admin is False:
-                        return Response("Only admin can change the type of account",
-                                        status=status.HTTP_401_UNAUTHORIZED)
-
-                    field.save()
-                    if response == "":
-                        response = "No data Change"
-                    return Response(response, status=status.HTTP_200_OK)
-
-
-        return Response("User not found", status=status.HTTP_404_NOT_FOUND)
+            return Response("Unauthorized", status=status.HTTP_401_UNAUTHORIZED)
 
     def delete(self, request):
         user = UserInfo.objects.get(user=request.user)
