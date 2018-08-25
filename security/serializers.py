@@ -11,4 +11,4 @@ class SeurityOfficeSerializer(serializers.ModelSerializer):
 class PrimaryKeyToSecuritySerializer(serializers.ModelSerializer):
     class Meta:
         model = SecurityOffice
-        fields = ('user', 'Name', 'Unit', 'MobileNumber', 'VisitorMailID', 'Remarks', 'Time', 'Date', 'BuildingName')
+        fields = ('user', 'Name', 'Unit','houseNo', 'MobileNumber', 'VisitorMailID', 'Remarks', 'Time', 'Date', 'BuildingName')

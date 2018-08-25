@@ -107,9 +107,11 @@ class CustomAuthToken(ObtainAuthToken):
             user = serializer.validated_data['user']
             token, created = Token.objects.get_or_create(user=user)
             user_info = UserInfo.objects.get(user_id=user)
+            phone = (str(user_info.phoneNo))
             content = {
-                'token': token.key, 'user_id': user.pk, 'email': user.email,
+                'token': token.key, 'user_id': user.pk, 'email': user.email, 'phoneNo': phone,
                 'building_name': user_info.buildingName, 'unit_no': user_info.unitNo, 'is_Admin': user_info.isAdmin
+
             }
             return Response(content, status=status.HTTP_200_OK)
         else:
@@ -126,7 +128,6 @@ def user_logout(request):
 
 @method_decorator(csrf_exempt, name='delete')
 class UserOperations(APIView):
-    print("tillhere")
     authentication_classes = [BasicAuthentication, CsrfExemptSessionAuthentication]
     serializer_class = BasicUserSerializer
 

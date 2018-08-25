@@ -11,6 +11,7 @@ class SecurityOffice(models.Model):
     Name = models.CharField(max_length=100, default="", blank=False)
     Unit = models.CharField(max_length=25, default="", blank=False)
     BuildingName = models.CharField(max_length=25, default="", blank=False)
+    houseNo = models.CharField(max_length=255, default="")
     MobileNumber = PhoneField(default="", blank=False)
     VisitorMailID = models.EmailField(default="", blank=False)
     user = models.EmailField(default="", blank=False)

@@ -17,4 +17,9 @@ class AccountsDescriptionSerializer(serializers.ModelSerializer):
 class AccountsExpenseSerializer(serializers.ModelSerializer):
     class Meta:
         model = AccountsModel
-        fields = ('Amount',)
+        fields = ('Amount','IsExpense')
+
+class AccountsExportSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AccountsModel
+        fields = ('user','Type','Amount', 'IsExpense', 'buildingName', 'unitNo', 'Date')

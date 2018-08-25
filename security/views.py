@@ -147,31 +147,36 @@ class SecurityOfficeView(APIView):
                     email = request.user.email
                     user = UserInfo.objects.get(user=email)
                     is_admin = user.isAdmin
-                    if is_admin is True:
-                        if request.data['BuildingName'] == user.buildingName:
-                            print(request.data['Unit'])
-                            print(user.unitNo)
-                            if request.data['Unit'] == user.unitNo:
-                                serializer.save()
-                                return Response(serializer.data, status=status.HTTP_201_CREATED)
-                            else:
-                                return Response("Unit Incorrect", status=status.HTTP_400_BAD_REQUEST)
+                    json_user =""
+                    try:
 
-                        else:
-                            return Response("Not right building", status=status.HTTP_400_BAD_REQUEST)
-                    else:
-                        if request.data['BuildingName'] == user.buildingName:
-                            if request.data['Unit'] == user.unitNo:
-                                user = request.data['user']
-                                if email == user:
-                                    serializer.save()
-                                    return Response(serializer.data, status=status.HTTP_201_CREATED)
+                        json_user = UserInfo.objects.get(user=request.data['user'])
+                    finally:
+                        if json_user:
+                            if is_admin is True:
+                                if request.data['BuildingName'] == user.buildingName:
+                                    if request.data['Unit'] == user.unitNo and request.data['houseNo'] == json_user.houseNo:
+                                        serializer.save()
+                                        return Response(serializer.data, status=status.HTTP_201_CREATED)
+                                    else:
+                                        return Response("Unit or house number  Incorrect", status=status.HTTP_400_BAD_REQUEST)
+
                                 else:
-                                    return Response("Non-admin user cannot add other visitor", status=status.HTTP_401_UNAUTHORIZED)
+                                    return Response("Not right building", status=status.HTTP_400_BAD_REQUEST)
                             else:
-                                return Response("Unit Incorrect", status=status.HTTP_400_BAD_REQUEST)
-                        else:
-                            return Response("Not right building", status=status.HTTP_400_BAD_REQUEST)
+                                if request.data['BuildingName'] == user.buildingName:
+                                    if request.data['Unit'] == user.unitNo and request.data['houseNo'] == json_user.houseNo:
+                                        user = request.data['user']
+                                        if email == user:
+                                            serializer.save()
+                                            return Response(serializer.data, status=status.HTTP_201_CREATED)
+                                        else:
+                                            return Response("Non-admin user cannot add other visitor",
+                                                            status=status.HTTP_401_UNAUTHORIZED)
+                                    else:
+                                        return Response("Unit or house number  Incorrect", status=status.HTTP_400_BAD_REQUEST)
+                                else:
+                                    return Response("Not right building", status=status.HTTP_400_BAD_REQUEST)
 
                 #else:
                  #   return Response("Datetime should be greater than current time", status=status.HTTP_400_BAD_REQUEST)

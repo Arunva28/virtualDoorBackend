@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from .models import AccountsModel, Description
-from .serializers import AccountsSerializer, AccountsDescriptionSerializer, AccountsExpenseSerializer
+from .serializers import AccountsSerializer, AccountsDescriptionSerializer, AccountsExpenseSerializer, AccountsExportSerializer
 from userinfo.serializers import AddUserSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -11,6 +11,9 @@ from django.utils.decorators import method_decorator
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 from django.db.models import Q
 from datetime import datetime
+import xlsxwriter
+from django.core.mail import EmailMessage
+from io import StringIO, BytesIO
 
 
 # Create your views here.
@@ -26,10 +29,10 @@ class AccountsView(APIView):
     def get(self, request):
         #if user.is
         user = UserInfo.objects.get(user=request.user)
+        print("mine1")
         is_admin = user.isAdmin
         if is_admin is True:
             accounts_info = AccountsModel.objects.filter(expenseApproved=False)
-            print(request.user)
             serializer = AccountsSerializer(accounts_info, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
@@ -85,6 +88,36 @@ class AccountsView(APIView):
                                 return Response(serializer.data, status=status.HTTP_201_CREATED)
                         else:
                             return Response("Drop down selection invalid", status=status.HTTP_401_UNAUTHORIZED)
+
+                elif request.data['user'] == "all":
+                    data_user =""
+                    iterations = 0
+                    try:
+                        filter_data = UserInfo.objects.filter(Q(buildingName=buildning_name) & Q(unitNo=unitNo))
+                        serializer_user = AddUserSerializer(filter_data, many=True)
+
+                    finally:
+                        if serializer_user.data:
+                            for eachelement in serializer_user.data:
+                                iterations += 1
+                            amount = float(request.data['Amount']) / float(iterations)
+                            for eachelement in serializer_user.data:
+                                try:
+                                    accounts = Description.objects.get(Fields=request.data['Type'])
+                                finally:
+                                    if accounts:
+                                        request.data['Amount'] = "{0:.4f}".format(amount)
+                                        request.data['user'] = eachelement['user']['email']
+                                        request.data['houseNo'] = eachelement['houseNo']
+                                        serializer = AccountsSerializer(data=request.data)
+                                        if serializer.is_valid(raise_exception=ValueError):
+                                            serializer.save()
+                                            data_user = data_user + str(serializer.data)
+                                    else:
+                                        return Response("Drop down selection invalid", status=status.HTTP_401_UNAUTHORIZED)
+                            return Response(data_user, status=status.HTTP_201_CREATED)
+                        else:
+                            return Response("Building or unit no incorrect", status=status.HTTP_401_UNAUTHORIZED)
 
                 else:
                     return Response("user not found in the Building, House, or Unit Records", status=status.HTTP_401_UNAUTHORIZED)
@@ -207,6 +240,8 @@ class AccountsDropdownview(APIView):
             Description(Fields=request.data['Fields']).save()
             return Response(request.data, status=status.HTTP_201_CREATED)
 
+        return Response("Unauthorized access", status=status.HTTP_401_UNAUTHORIZED)
+
     def delete(self, request):
         user = UserInfo.objects.get(user=request.user)
         is_admin = user.isAdmin
@@ -230,57 +265,181 @@ class Expenses(APIView):
     def post(self, request):
         user = UserInfo.objects.get(user=request.user)
         is_admin = user.isAdmin
+        nodata_indicate = 0
         serializer_user=""
+        total_income = ""
+        total_expense = ""
         filter_data= ""
         Data_int = 0
         Send_data = []
+        data_dict_income_total ={}
+        data_dict_expense_total = {}
+        data_dict_income ={}
+        income_s_dict ={}
+        data_dict_expense ={}
+        data_total ={}
+        iterator =0
         serializer_user = AddUserSerializer(filter_data, many=True)
-        if is_admin is False:
+        if True:
             try:
                 filter_data = UserInfo.objects.filter(Q(user_id=request.data['UserId']) &
                                                   Q(buildingName=request.data['buildingName']))
                 serializer_user = AddUserSerializer(filter_data, many=True)
             finally:
                 if serializer_user.data:
-                    filter_data=  AccountsModel.objects.filter(Q(Date__year= request.data['Year']) &
+                    try:
+                        filter_data=  AccountsModel.objects.filter(Q(Date__year= request.data['Year']) &
                                                        Q(Date__month= request.data['Month']) &
                                                                Q(user=request.data['UserId']) &
+                                                                   Q(expenseApproved=True) &
                                                                Q(IsExpense= False))
 
-                    Serializer_data = AccountsExpenseSerializer(filter_data, many=True)
-                    Data_int = 0
-                    for eachelement in Serializer_data.data:
-                        Data = str(eachelement)
-                        Data = Data.split(',')
-                        Data= Data[1].split(')')
-                        Data_1 = list(Data[0])
-                        Data_1 = Data_1[2:-1]
-                        Data_1 = ''.join(Data_1)
-                        Data_int = Data_int + float(Data_1)
-                    Send_data.append(Data_int)
-                    filter_data=  AccountsModel.objects.filter(Q(Date__year= request.data['Year']) &
-                                                       Q(Date__month= request.data['Month']) &
-                                                               Q(user=request.data['UserId']) &
-                                                               Q(IsExpense= True))
+                    finally:
+                        if filter_data:
+                            Serializer_data = AccountsExpenseSerializer(filter_data, many=True)
+                            Data_int = 0.0
 
-                    Serializer_data = AccountsExpenseSerializer(filter_data, many=True)
-                    Data_int = 0
-                    for eachelement in Serializer_data.data:
-                        Data = str(eachelement)
-                        Data = Data.split(',')
-                        Data= Data[1].split(')')
-                        Data_1 = list(Data[0])
-                        Data_1 = Data_1[2:-1]
-                        Data_1 = ''.join(Data_1)
-                        Data_int = Data_int + float(Data_1)
-                    Send_data.append(Data_int)
-
-                    return Response(Send_data, status=status.HTTP_200_OK)
-
-            return Response("Unauthorized access", status=status.HTTP_401_UNAUTHORIZED)
+                            for eachelement in Serializer_data.data:
+                                Data = eachelement['Amount']
+                                Data_int = Data_int + float(Data)
+                                data_dict_income['Total Income'] =  Data_int
+                        else:
+                            data_dict_income['Total Income'] = Data_int
+                            nodata_indicate += 1
 
 
+                    try:
+                        filter_data = AccountsModel.objects.filter(Q(Date__year=request.data['Year']) &
+                                                                           Q(Date__month=request.data['Month']) &
+                                                                           Q(user=request.data['UserId']) &
+                                                                   Q(expenseApproved=True) &
+                                                                           Q(IsExpense=True))
+                    finally:
+                        if filter_data:
+                            Serializer_data = AccountsExpenseSerializer(filter_data, many=True)
+                            Data_int = 0.0
+                            for eachelement in Serializer_data.data:
+                                Data = eachelement['Amount']
+                                Data_int = Data_int + float(Data)
+                                data_dict_expense['Total Expense'] = round( Data_int,4)
+                        else:
+                            data_dict_expense['Total Expense'] = round(Data_int,4)
+                            nodata_indicate +=1
 
 
+                        Dropdown = Description.objects.all()
+                        serializer = AccountsDescriptionSerializer(Dropdown, many=True)
+                        ite=0
+                        for eachelement in serializer.data:
+                            ite = ite + 1
+                            data_expense = 0
+                            data_income = 0
+                            try:
+                                filter_data = AccountsModel.objects.filter(Q(Date__year=request.data['Year']) &
+                                                                           Q(Date__month=request.data['Month']) &
+                                                                           Q(user=request.data['UserId']) &
+                                                                           Q(expenseApproved=True) &
+                                                                           Q(Type=eachelement['Fields']))
+                            finally:
+                                if filter_data:
+                                    Serializer_data = AccountsExpenseSerializer(filter_data, many=True)
+                                    for eachelementinelement in Serializer_data.data:
+                                        Data = eachelementinelement['Amount']
+                                        if eachelementinelement['IsExpense'] is True:
+                                            data_expense = data_expense + float(Data)
+                                        else:
+                                            data_income = data_income + float(Data)
+                                    if data_expense:
+                                        if data_dict_expense.get(eachelement['Fields']) is not None:
+                                            data_dict_expense[eachelement['Fields']] =  (data_dict_expense.get(eachelement['Fields']) + data_expense)
+                                        else:
+                                            data_dict_expense[eachelement['Fields']] =  data_expense
+                                    if data_income:
+                                        if data_dict_income.get(eachelement['Fields']) is not None:
+                                            data_dict_income[eachelement['Fields']] = data_dict_income.get(eachelement['Fields']) + data_income
+                                        else:
+                                            data_dict_income[eachelement['Fields']] =  data_income
+                        list_dict =[]
+                        list_dict.append(data_dict_income)
+                        list_dict.append(data_dict_expense)
+                        print(list_dict)
+                        #data_total = {data_dict_income, data_dict_expense}
+                        #income_s_dict = {data_dict_income_total, data_dict_income}
+
+                        return Response(list_dict, status=status.HTTP_200_OK)
+
+                return Response("USer ID or building name incorrect", status=status.HTTP_400_BAD_REQUEST)
+
+    def put(self, request):
+        user = UserInfo.objects.get(user=request.user)
+        filter_data = ""
+        Serializer_data =""
+        Dropdown = Description.objects.all()
+        serializer = AccountsDescriptionSerializer(Dropdown, many=True)
+        ite = 0
+        ite = ite + 1
+        data_expense = 0
+        data_income = 0
+        try:
+            filter_data = AccountsModel.objects.filter(Q(Date__year=request.data['Year']) &
+                                                           Q(Date__month=request.data['Month']) &
+                                                           Q(user=request.data['UserId']) &
+                                                           Q(expenseApproved=True) )
+
+        finally:
+            if filter_data:
+                #workbook = xlsxwriter.Workbook('accounts.xlsx')
+                name = "accounts.xlsx"
+                f = BytesIO()  # create a file-like object
+                workbook = xlsxwriter.Workbook(f)
+                worksheet = workbook.add_worksheet()
+                row = 0
+                col = 0
+                Serializer_data = AccountsExportSerializer(filter_data, many=True)
+                Row_1 = {'1': 'userID', '2':'Type of Account', '3':'Amount in INR', '4':'Expense',
+                         '5':'Building Name', '6':'Unit Number', '7':'Date of Expenditure'}
+                cell_format = workbook.add_format({'bold': True, 'text_wrap': True})
+                for key in Row_1.keys():
+                    worksheet.write(row, col, Row_1[key], cell_format)
+                    col += 1
+                for eachelement in Serializer_data.data:
+                    col =0
+                    cell_format = workbook.add_format({'text_wrap': True})
+                    for key in eachelement.keys():
+                        worksheet.write(row+1, col, eachelement[key],cell_format)
+                        col +=1
+                    row += 1
+                workbook.close()
+                Salutation = "Details of your account"
+                Message  = "Hello " + str(request.user.username) + ",\n" \
+                                                                      "PFA the account details for the month of " \
+                           + str(request.data['Month']) + " in " + \
+                           str(request.data['Year'])+"\n"+"This is an auto generated email, Do not reply \n\n\nRegards\nVD."
+                message = EmailMessage(Salutation, Message, "virtualdoorsu@gmail.com", [str(request.user.email)],["murthy605@gmail.com","arunva28@gmail.com"])
+                message.attach('accounts.xlsx', f.getvalue(), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+                message.send()
+
+                return Response("Mail with attachment sent to your email ID", status=status.HTTP_200_OK)
+            else:
+                return Response("Incorrect",status=status.HTTP_400_BAD_REQUEST)
+
+@method_decorator(csrf_exempt, name='get')
+class AllAccountsView(APIView):
+    authentication_classes = [BasicAuthentication, CsrfExemptSessionAuthentication]
+
+    def get(self, request):
+        #if user.is
+        user = UserInfo.objects.get(user=request.user)
+        is_admin = user.isAdmin
+        if is_admin is True:
+            accounts_info = AccountsModel.objects.all()
+            serializer = AccountsSerializer(accounts_info, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        else:
+
+            email = request.user.email
+            accounts_info = AccountsModel.objects.filter(user=email)
+            serializer = AccountsSerializer(accounts_info, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
 
