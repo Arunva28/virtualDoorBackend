@@ -106,7 +106,7 @@ class AccountsView(APIView):
                                     accounts = Description.objects.get(Fields=request.data['Type'])
                                 finally:
                                     if accounts:
-                                        request.data['Amount'] = "{0:.4f}".format(amount)
+                                        request.data['Amount'] = round(amount,2)
                                         request.data['user'] = eachelement['user']['email']
                                         request.data['houseNo'] = eachelement['houseNo']
                                         serializer = AccountsSerializer(data=request.data)
@@ -279,6 +279,7 @@ class Expenses(APIView):
         data_dict_expense ={}
         data_total ={}
         iterator =0
+        list_dict = []
         serializer_user = AddUserSerializer(filter_data, many=True)
         if True:
             try:
@@ -302,12 +303,12 @@ class Expenses(APIView):
                             for eachelement in Serializer_data.data:
                                 Data = eachelement['Amount']
                                 Data_int = Data_int + float(Data)
-                                data_dict_income['Total Income'] =  Data_int
+                                data_dict_income_total['Total Income'] =  round(Data_int,2)
                         else:
-                            data_dict_income['Total Income'] = Data_int
+                            data_dict_income_total['Total Income'] = round(Data_int,2)
                             nodata_indicate += 1
 
-
+                        list_dict.append(data_dict_income_total)
                     try:
                         filter_data = AccountsModel.objects.filter(Q(Date__year=request.data['Year']) &
                                                                            Q(Date__month=request.data['Month']) &
@@ -321,12 +322,12 @@ class Expenses(APIView):
                             for eachelement in Serializer_data.data:
                                 Data = eachelement['Amount']
                                 Data_int = Data_int + float(Data)
-                                data_dict_expense['Total Expense'] = round( Data_int,4)
+                                data_dict_expense_total['Total Expense'] = round(Data_int,2)
                         else:
-                            data_dict_expense['Total Expense'] = round(Data_int,4)
+                            data_dict_expense_total['Total Expense'] = round(Data_int,2)
                             nodata_indicate +=1
 
-
+                        list_dict.append(data_dict_expense_total)
                         Dropdown = Description.objects.all()
                         serializer = AccountsDescriptionSerializer(Dropdown, many=True)
                         ite=0
@@ -334,6 +335,11 @@ class Expenses(APIView):
                             ite = ite + 1
                             data_expense = 0
                             data_income = 0
+                            if data_dict_income.get(eachelement['Fields']) is None:
+                                data_dict_income[eachelement['Fields']] = data_expense
+
+                            if data_dict_expense.get(eachelement['Fields']) is None:
+                                data_dict_expense[eachelement['Fields']] = data_income
                             try:
                                 filter_data = AccountsModel.objects.filter(Q(Date__year=request.data['Year']) &
                                                                            Q(Date__month=request.data['Month']) &
@@ -351,18 +357,17 @@ class Expenses(APIView):
                                             data_income = data_income + float(Data)
                                     if data_expense:
                                         if data_dict_expense.get(eachelement['Fields']) is not None:
-                                            data_dict_expense[eachelement['Fields']] =  (data_dict_expense.get(eachelement['Fields']) + data_expense)
+                                            data_dict_expense[eachelement['Fields']] =  round((data_dict_expense.get(eachelement['Fields']) + data_expense),2)
                                         else:
-                                            data_dict_expense[eachelement['Fields']] =  data_expense
+                                            data_dict_expense[eachelement['Fields']] =  round(data_expense,2)
                                     if data_income:
                                         if data_dict_income.get(eachelement['Fields']) is not None:
-                                            data_dict_income[eachelement['Fields']] = data_dict_income.get(eachelement['Fields']) + data_income
+                                            data_dict_income[eachelement['Fields']] = round(data_dict_income.get(eachelement['Fields']) + data_income,2)
                                         else:
-                                            data_dict_income[eachelement['Fields']] =  data_income
-                        list_dict =[]
+                                            data_dict_income[eachelement['Fields']] = round(data_income, 2)
+
                         list_dict.append(data_dict_income)
                         list_dict.append(data_dict_expense)
-                        print(list_dict)
                         #data_total = {data_dict_income, data_dict_expense}
                         #income_s_dict = {data_dict_income_total, data_dict_income}
 
