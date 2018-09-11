@@ -200,7 +200,7 @@ class AccountsView(APIView):
                     field.save()
                     if response == "":
                         response = "No data Change"
-                    return Response(response, status=status.HTTP_200_OK)
+                    return Response(response, status=status.HTTP_204_NO_CONTENT)
 
 
         return Response("User not found", status=status.HTTP_404_NOT_FOUND)
@@ -265,12 +265,12 @@ class Expenses(APIView):
     def post(self, request):
         user = UserInfo.objects.get(user=request.user)
         is_admin = user.isAdmin
-        nodata_indicate = 0
+        nodata_indicate = 0.0
         serializer_user=""
         total_income = ""
         total_expense = ""
         filter_data= ""
-        Data_int = 0
+        Data_int = 0.0
         Send_data = []
         data_dict_income_total ={}
         data_dict_expense_total = {}
@@ -333,13 +333,13 @@ class Expenses(APIView):
                         ite=0
                         for eachelement in serializer.data:
                             ite = ite + 1
-                            data_expense = 0
-                            data_income = 0
+                            data_expense = 0.0
+                            data_income = 0.0
                             if data_dict_income.get(eachelement['Fields']) is None:
-                                data_dict_income[eachelement['Fields']] = data_expense
+                                data_dict_income[eachelement['Fields']] = round(data_expense,2)
 
                             if data_dict_expense.get(eachelement['Fields']) is None:
-                                data_dict_expense[eachelement['Fields']] = data_income
+                                data_dict_expense[eachelement['Fields']] = round(data_income,2)
                             try:
                                 filter_data = AccountsModel.objects.filter(Q(Date__year=request.data['Year']) &
                                                                            Q(Date__month=request.data['Month']) &

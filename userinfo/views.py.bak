@@ -69,17 +69,16 @@ class UserRecordView(APIView):
                             for count in tenant_found:
                                 if request.data['houseNo'] == count.houseNo:
                                     return Response("Tenant already exists. Please verify", status=status.HTTP_400_BAD_REQUEST)
-                            # request.data['user']['username'] = request.data['user']['username'].lower()
-                            # request.data['user']['username'] = request.data['user']['username'].strip()
-                            # user = serializer.create(validated_data=request.data)
-                            # subject = 'Welcome to VirtualDoor'
-                            # message = 'Dear Customer,' + "\n" + 'Thank you for registering with us.' + "\n" + "\n" +\
-                            #           'THIS IS AN AUTO GENERATED MAIL. PLEASE DO NOT REPLY TO THIS MAIL'
-                            # email_from = settings.EMAIL_HOST_USER
-                            # recipient_list = [request.data['user_id']]
-                            # send_mail(subject, message, email_from, recipient_list)
-                            # return Response(serializer.data, status=status.HTTP_201_CREATED)
-                            return Response("test code", status=status.HTTP_200_OK)
+                            request.data['user']['username'] = request.data['user']['username'].lower()
+                            request.data['user']['username'] = request.data['user']['username'].strip()
+                            user = serializer.create(validated_data=request.data)
+                            subject = 'Welcome to VirtualDoor'
+                            message = 'Dear Customer,' + "\n" + 'Thank you for registering with us.' + "\n" + "\n" +\
+                                      'THIS IS AN AUTO GENERATED MAIL. PLEASE DO NOT REPLY TO THIS MAIL'
+                            email_from = settings.EMAIL_HOST_USER
+                            recipient_list = [request.data['user_id']]
+                            send_mail(subject, message, email_from, recipient_list)
+                            return Response(serializer.data, status=status.HTTP_201_CREATED)
                     return Response("unitNo does not exist", status=status.HTTP_400_BAD_REQUEST)
 
                 else:
@@ -110,7 +109,8 @@ class CustomAuthToken(ObtainAuthToken):
             phone = (str(user_info.phoneNo))
             content = {
                 'token': token.key, 'user_id': user.pk, 'email': user.email, 'phoneNo': phone,
-                'building_name': user_info.buildingName, 'unit_no': user_info.unitNo, 'is_Admin': user_info.isAdmin
+                'building_name': user_info.buildingName, 'unit_no': user_info.unitNo, 'houseNo': user_info.houseNo,
+                'is_Admin': user_info.isAdmin
 
             }
             return Response(content, status=status.HTTP_200_OK)
@@ -310,6 +310,33 @@ class UpdateAdminRights(APIView):
                 user_info.isAdmin = request.data['isAdmin']
                 user_info.save()
                 return Response('Updated user admin rights', status=status.HTTP_200_OK)
+            except:
+                return Response('User not found', status=status.HTTP_404_NOT_FOUND)
+        else:
+            return Response('Non permissible',status=status.HTTP_401_UNAUTHORIZED)
+
+@method_decorator(csrf_exempt, name='post')
+class UpdateHouseNo(APIView):
+    authentication_classes = [BasicAuthentication, CsrfExemptSessionAuthentication]
+    serializer_class = AddUserSerializer
+
+    def post(self, request):
+        email = request.user.email
+
+        admin_status = UserInfo.objects.get(user=email)
+        if admin_status.isAdmin is True:
+            current_user = request.data['user']
+            try:
+                user_info = UserInfo.objects.get(user=current_user)
+                vacant_status = UserInfo.objects.filter(Q(buildingName=admin_status.buildingName)
+                                                    & Q(unitNo=request.data['unitNo']))
+                for count in vacant_status:
+                    if request.data['houseNo'] == count.houseNo:
+                        return Response("Tenant already exists. Please verify", status=status.HTTP_400_BAD_REQUEST)
+                user_info.houseNo = request.data['houseNo']
+                user_info.unitNo = request.data['unitNo']
+                user_info.save()
+                return Response('Updated house No', status=status.HTTP_200_OK)
             except:
                 return Response('User not found', status=status.HTTP_404_NOT_FOUND)
         else:

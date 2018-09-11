@@ -50,7 +50,9 @@ INSTALLED_APPS = [
     'userinfo',
     'accounts',
     'security',
+    'complaints',
     'units',
+    'staff'
 ]
 
 MIDDLEWARE = [

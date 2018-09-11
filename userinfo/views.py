@@ -109,8 +109,7 @@ class CustomAuthToken(ObtainAuthToken):
             phone = (str(user_info.phoneNo))
             content = {
                 'token': token.key, 'user_id': user.pk, 'email': user.email, 'phoneNo': phone,
-                'building_name': user_info.buildingName, 'unit_no': user_info.unitNo, 'houseNo': user_info.houseNo,
-                'is_Admin': user_info.isAdmin
+                'building_name': user_info.buildingName, 'unit_no': user_info.unitNo, 'is_Admin': user_info.isAdmin
 
             }
             return Response(content, status=status.HTTP_200_OK)
