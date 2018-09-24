@@ -65,16 +65,15 @@ class AccountsView(APIView):
         serializer_user = ""
         user = UserInfo.objects.get(user=request.user)
         is_admin = user.isAdmin
-        buildning_name = request.data['buildingName']
-        houseNo = request.data['houseNo']
-        unitNo = request.data['unitNo']
+        buildning_name = user.buildingName#request.data['buildingName']
+        #houseNo = #request.data['houseNo']
+        unitNo = user.unitNo#request.data['unitNo']
         filter_data = ""
         serializer_user = AddUserSerializer(filter_data, many=True)
         if is_admin is True:
             try:
                 filter_data = UserInfo.objects.filter(Q(user_id=request.data['user']) &
-                                                      Q(buildingName=buildning_name) &
-                                                      Q(houseNo=houseNo) & Q(unitNo=unitNo))
+                                                      Q(buildingName=buildning_name) & Q(unitNo=unitNo))
                 serializer_user = AddUserSerializer(filter_data, many=True)
             finally:
                 if serializer_user.data and buildning_name == user.buildingName and unitNo == user.unitNo :
@@ -82,6 +81,10 @@ class AccountsView(APIView):
                         accounts = Description.objects.get(Fields=request.data['Type'])
                     finally:
                         if accounts:
+
+                            request.data['houseNo'] = serializer_user.data[0]['houseNo']
+                            request.data['unitNo'] = serializer_user.data[0]['unitNo']
+                            request.data['buildingName'] = serializer_user.data[0]['buildingName']
                             serializer = AccountsSerializer(data=request.data)
                             if serializer.is_valid(raise_exception=ValueError):
                                 serializer.save()
@@ -125,8 +128,7 @@ class AccountsView(APIView):
         else:
             try:
                 filter_data = UserInfo.objects.filter(Q(user_id=request.data['user']) &
-                                                  Q(buildingName=buildning_name) &
-                                                      Q(houseNo=houseNo) & Q(unitNo=unitNo))
+                                                  Q(buildingName=buildning_name) & Q(unitNo=unitNo))
                 serializer_user = AddUserSerializer(filter_data, many=True)
             finally:
                 if serializer_user.data and request.data['user'] == user.user_id:
@@ -136,6 +138,9 @@ class AccountsView(APIView):
                         if accounts:
                             serializer = AccountsSerializer(data=request.data)
                             if request.data['Type'] == "Maintenance":
+                                request.data['houseNo'] = serializer_user.data[0]['houseNo']
+                                request.data['unitNo'] = serializer_user.data[0]['unitNo']
+                                request.data['buildingName'] = serializer_user.data[0]['buildingName']
                                 if serializer.is_valid(raise_exception=ValueError):
                                     serializer.save()
                                     return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -167,8 +172,8 @@ class AccountsView(APIView):
             valid_user = ""
         finally:
             if valid_user:
-                if valid_user.buildingName == request.data['buildingName'] and valid_user.unitNo == request.data[
-                    'unitNo'] and valid_user.houseNo == request.data['houseNo'] and field.user == request.data['user']:
+
+                if  field.user == request.data['user']:
 
                     if field.expenseApproved != request.data['expenseApproved'] and is_admin is True:
                         field.expenseApproved = request.data['expenseApproved']
@@ -200,7 +205,9 @@ class AccountsView(APIView):
                     field.save()
                     if response == "":
                         response = "No data Change"
-                    return Response(response, status=status.HTTP_204_NO_CONTENT)
+                        return Response(response, status=status.HTTP_204_NO_CONTENT)
+                    else:
+                        return Response(response, status=status.HTTP_201_CREATED)
 
 
         return Response("User not found", status=status.HTTP_404_NOT_FOUND)
@@ -229,8 +236,19 @@ class AccountsDropdownview(APIView):
     def get(self, request):
 
         Dropdown = Description.objects.all()
+        user = UserInfo.objects.get(user=request.user)
+        is_admin = user.isAdmin
+        ite = 0
         serializer = AccountsDescriptionSerializer(Dropdown, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        if is_admin is True:
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        else:
+            for each in serializer.data:
+                ite +=1
+                if str(each['Fields']) == "Maintenance":
+                    print(ite)
+                    return Response(serializer.data[ite-1], status=status.HTTP_200_OK)
+
 
     def post(self, request):
         user = UserInfo.objects.get(user=request.user)

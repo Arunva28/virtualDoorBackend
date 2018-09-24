@@ -26,6 +26,7 @@ urlpatterns = [
     url(r'^superuser/', include('superuser.urls')),
     url(r'^complaints/', include('complaints.urls')),
 	url(r'^staff/', include('staff.urls')),
+    url(r'^society/', include('society.urls')),
    # url(r'^api-token-auth/', obtain_auth_token),
 
 ]

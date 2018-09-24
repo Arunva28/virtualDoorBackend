@@ -52,7 +52,8 @@ INSTALLED_APPS = [
     'security',
     'complaints',
     'units',
-    'staff'
+    'staff',
+    'society'
 ]
 
 MIDDLEWARE = [
