@@ -112,6 +112,8 @@ class AccountsView(APIView):
                                         request.data['Amount'] = round(amount,2)
                                         request.data['user'] = eachelement['user']['email']
                                         request.data['houseNo'] = eachelement['houseNo']
+                                        request.data['buildingName'] = eachelement['buildingName']
+                                        request.data['unitNo'] = eachelement['unitNo']
                                         serializer = AccountsSerializer(data=request.data)
                                         if serializer.is_valid(raise_exception=ValueError):
                                             serializer.save()

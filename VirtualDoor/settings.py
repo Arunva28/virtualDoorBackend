@@ -53,7 +53,9 @@ INSTALLED_APPS = [
     'complaints',
     'units',
     'staff',
-    'society'
+    'society',
+    'vendor',
+    'newsletter'
 ]
 
 MIDDLEWARE = [
