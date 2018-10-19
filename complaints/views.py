@@ -9,6 +9,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 from userinfo.models import UserInfo
+from django.db.models import Q
 
 
 # Create your views here.
@@ -83,7 +84,8 @@ class ComplaintsView(APIView):
         user = UserInfo.objects.get(user=email)
         is_admin = user.isAdmin
         if is_admin is True:
-            complaints_list = TicketDescription.objects.filter(BuildingName=user.buildingName)
+            complaints_list = TicketDescription.objects.filter(Q(BuildingName=user.buildingName) &
+                                                               Q(IssueResolved=False))
             serializer = TicketDescriptionSerializer(complaints_list, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
