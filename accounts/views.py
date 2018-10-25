@@ -262,11 +262,11 @@ class AccountsDropdownview(APIView):
 
         return Response("Unauthorized access", status=status.HTTP_401_UNAUTHORIZED)
 
-    def delete(self, request):
+    def delete(self, request, Fields):
         user = UserInfo.objects.get(user=request.user)
         is_admin = user.isAdmin
         field_to_delete = request.data['Fields']
-        field = Description.objects.get(Fields=field_to_delete)
+        field = Description.objects.get(Fields=Fields)
         if is_admin is True:
             try:
                 field.delete()
@@ -468,3 +468,19 @@ class AllAccountsView(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+@method_decorator(csrf_exempt, name='delete')
+class AccountsDropdownviewDelete(APIView):
+    authentication_classes = [BasicAuthentication, CsrfExemptSessionAuthentication]
+    def delete(self, request, Fields):
+        user = UserInfo.objects.get(user=request.user)
+        is_admin = user.isAdmin
+        print(Fields)
+        if is_admin is True:
+            try:
+                field = Description.objects.get(Fields=Fields)
+                field.delete()
+                return Response("Account Deleted Successfully", status=status.HTTP_200_OK)
+            except Description.DoesNotExist:
+                return Response("Account Not found", status=status.HTTP_404_NOT_FOUND)
+        else:
+            return Response("Unauthorized access", status=status.HTTP_401_UNAUTHORIZED)
