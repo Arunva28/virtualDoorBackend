@@ -10,6 +10,7 @@ from django.utils.decorators import method_decorator
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 from userinfo.models import UserInfo
 from django.db.models import Q
+from datetime import datetime
 
 
 # Create your views here.
@@ -63,21 +64,31 @@ class ComplaintsView(APIView):
             email = request.user.email
             user = UserInfo.objects.get(user=email)
             is_admin = user.isAdmin
-
-            if is_admin is False:
-                if request.data['Issue Resolved'] is False:
-                    serializer.save()
-                    ticket_details = TicketDescription.objects.filter(Description=request.data['Description'])
+            try:
+                complaints_list = TicketsName.objects.get(TypeofIssue=request.data['Section'])
+                if is_admin is False:
+                    print("I m here")
                     ticket_count = TicketDescription.objects.count()
-                    ticket_count = ticket_count+1
-                    ticket_details.TicketID = ticket_count
-                    ticket_details.save()
-                    return Response(serializer.data, status=status.HTTP_201_CREATED)
+                    ticket_count = ticket_count + 1
+                    request.data['BuildingName'] = user.buildingName
+                    request.data['HouseNumber'] = user.houseNo
+                    request.data['TicketID'] = ticket_count
+
+                    serializer = TicketDescriptionSerializer(data=request.data)
+                    if serializer.is_valid(raise_exception=ValueError):
+                        serializer.save()
+                        return Response(serializer.data, status=status.HTTP_201_CREATED)
+                    else:
+                        return Response("Invalid data framing", status=status.HTTP_400_BAD_REQUEST )
                 else:
-                    return Response("Update only unresolved complaints", status=status.HTTP_417_EXPECTATION_FAILED)
-            else:
-                serializer.save()
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
+                    ticket_count = TicketDescription.objects.count()
+                    ticket_count = ticket_count + 1
+                    request.data['BuildingName'] = user.buildingName
+                    request.data['TicketID'] = ticket_count
+                    serializer.save()
+                    return Response(serializer.data, status=status.HTTP_201_CREATED)
+            except:
+                return Response("Missing section from list", status=status.HTTP_400_BAD_REQUEST)
 
     def get(self, request, format=None):
         email = request.user.email
@@ -89,7 +100,7 @@ class ComplaintsView(APIView):
             serializer = TicketDescriptionSerializer(complaints_list, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
-            complaints_list = TicketDescription.objects.filter(UserID=user.user)
+            complaints_list = TicketDescription.objects.filter(HouseNumber=user.houseNo)
             serializer = TicketDescriptionSerializer(complaints_list, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -107,6 +118,7 @@ class UpdateStatus(APIView):
             ticketdetails = TicketDescription.objects.get(id=request.data['ID'])
             if ticketdetails is not None:
                 ticketdetails.IssueResolved = request.data['Complaint Status']
+                ticketdetails.IssueSolvedTime = datetime.now()
                 ticketdetails.save()
                 return Response("Ticket status updated", status=status.HTTP_200_OK)
             else:

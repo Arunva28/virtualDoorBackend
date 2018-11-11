@@ -9,8 +9,8 @@ class TicketDescription(models.Model):
     IssueResolved = models.BooleanField(default=False,blank=True)
     Feedback = models.CharField(max_length=255,blank=True)
     Created = models.DateTimeField(auto_now=True)
-    Modified = models.DateTimeField(auto_now=True)
-    UserID = models.CharField(max_length=100, default="")
+    IssueSolvedTime = models.DateTimeField(auto_now=True)
+    HouseNumber = models.CharField(max_length=100, default="")
     TicketID = models.DecimalField(max_digits=20, decimal_places=0, default=Decimal('0'))
     BuildingName = models.CharField(max_length=100, default="")
 
