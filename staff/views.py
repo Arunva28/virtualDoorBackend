@@ -45,3 +45,20 @@ class StaffEdit(APIView):
                     Response("Only admin can update staff", status=status.HTTP_401_UNAUTHORIZED)
 
         return Response("Something went wrong", status=status.HTTP_400_BAD_REQUEST)
+
+@method_decorator(csrf_exempt, name='delete')
+class StaffDelete(APIView):
+    authentication_classes = [BasicAuthentication, CsrfExemptSessionAuthentication]
+    def delete(self, request, ID):
+        user = UserInfo.objects.get(user=request.user)
+        is_admin = user.isAdmin
+        print(ID)
+        if is_admin is True:
+            try:
+                field = StaffModel.objects.get(id=ID)
+                field.delete()
+                return Response("Deleted Successfully", status=status.HTTP_200_OK)
+            except Description.DoesNotExist:
+                return Response(" Not found", status=status.HTTP_404_NOT_FOUND)
+        else:
+            return Response("Unauthorized access", status=status.HTTP_401_UNAUTHORIZED)
