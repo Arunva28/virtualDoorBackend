@@ -5,6 +5,7 @@ from rest_framework.authtoken.views import obtain_auth_token
 
 urlpatterns = [
      url(r'^vendor/$', login_required((views.vendorEdit.as_view()))),
+     url(r'^vendor/delete/(?P<ID>.+?)/', login_required(views.VendorDelete.as_view())),
 
         ]
 
