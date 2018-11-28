@@ -20,7 +20,7 @@ from datetime import datetime, timezone
 from datetime import timedelta
 from django.contrib.auth.hashers import make_password, check_password
 from django.db.models import Q
-
+from array import array
 
 class CsrfExemptSessionAuthentication(SessionAuthentication):
     def enforce_csrf(self, request):
@@ -109,7 +109,7 @@ class CustomAuthToken(ObtainAuthToken):
             phone = (str(user_info.phoneNo))
             content = {
                 'token': token.key, 'user_id': user.pk, 'email': user.email, 'phoneNo': phone,
-                'building_name': user_info.buildingName, 'house_no': user_info.houseNo, 'unit_no': user_info.unitNo, 'is_Admin': user_info.isAdmin
+                'building_name': user_info.buildingName, 'unit_no': user_info.unitNo, 'is_Admin': user_info.isAdmin
 
             }
             return Response(content, status=status.HTTP_200_OK)
@@ -127,6 +127,7 @@ def user_logout(request):
 
 @method_decorator(csrf_exempt, name='delete')
 class UserOperations(APIView):
+    print("tillhere")
     authentication_classes = [BasicAuthentication, CsrfExemptSessionAuthentication]
     serializer_class = BasicUserSerializer
 
@@ -314,6 +315,7 @@ class UpdateAdminRights(APIView):
         else:
             return Response('Non permissible',status=status.HTTP_401_UNAUTHORIZED)
 
+
 @method_decorator(csrf_exempt, name='post')
 class UpdateHouseNo(APIView):
     authentication_classes = [BasicAuthentication, CsrfExemptSessionAuthentication]
@@ -340,3 +342,35 @@ class UpdateHouseNo(APIView):
                 return Response('User not found', status=status.HTTP_404_NOT_FOUND)
         else:
             return Response('Non permissible',status=status.HTTP_401_UNAUTHORIZED)
+
+
+class UnitNoQuery(APIView):
+    authentication_classes = [BasicAuthentication, CsrfExemptSessionAuthentication]
+    serializer_class = AddUserSerializer
+
+    def get(self, request):
+        unitnumbers = []
+        serializer = AddUserSerializer(data=request.data)
+        email = request.user.email
+        user = UserInfo.objects.get(user=email)
+
+        users = UserInfo.objects.filter(buildingName=user.buildingName)
+        for eachelement in users:
+            unitnumbers.append(eachelement.unitNo)
+        return Response(unitnumbers, status=status.HTTP_200_OK)
+
+
+class HouseNoQuery(APIView):
+    authentication_classes = [BasicAuthentication, CsrfExemptSessionAuthentication]
+    serializer_class = AddUserSerializer
+
+    def get(self, request):
+        housenumbers = []
+        serializer = AddUserSerializer(data=request.data)
+        email = request.user.email
+        user = UserInfo.objects.get(user=email)
+
+        users = UserInfo.objects.filter(buildingName=user.buildingName)
+        for eachelement in users:
+            housenumbers.append(eachelement.houseNo)
+        return Response(housenumbers, status=status.HTTP_200_OK)

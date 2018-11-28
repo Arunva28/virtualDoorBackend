@@ -16,8 +16,9 @@ urlpatterns = [
     url(r'^new_password_change/$', views.OTPGeneration.as_view()),
     url(r'^updateadminrights/$', views.UpdateAdminRights.as_view()),
     url(r'^updatephonenumber/$', views.UpdateMobileNumber.as_view()),
-    url(r'^updatehousenumber$', views.UpdateHouseNo.as_view()),
-
+    url(r'^updatehousenumber/$', views.UpdateHouseNo.as_view()),
+    url(r'^unitnoquery/$', views.UnitNoQuery.as_view()),
+    url(r'^housenoquery/$', views.HouseNoQuery.as_view()),
     # url(r'^query/(?P<accountsInfo>[\w.@+-]+)$', views.UserQuery.as_view()),
     # url(r'^updateAccounts/$', views.UserUpdateInfo.as_view()),
     # url(r'^logout/$', auth_views.logout, name='logout'),
